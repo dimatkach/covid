@@ -1,0 +1,72 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="styles.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="sliders.js"></script>
+<script src="model.js"></script>
+</head>
+<body>
+  <script>
+   var sliders = [];
+   var generator = new Generator();
+   var chart;
+   var frame;
+
+   function reset() {
+     document.getElementById("sliders").innerHTML = "";
+     sliders = [];
+     sliders.push(new Slider("sliders", "r0", "R0", 2.4, 0, 10, 0.1));
+     sliders.push(new Slider("sliders", "duration", "Duration", 14, 0, 21));
+     sliders.push(new Slider("sliders", "fatality", "Fatality (%)", 1, 0, 100, 0.1));
+     sliders.push(new Slider("sliders", "hospitalizations", "Hospitalizations (critical %)", 5, 0, 100, 0.1));
+     sliders.push(new Slider("sliders", "capacity", "ICU beds (per million)", 250, 0, 1000000));
+     sliders.push(new Slider("sliders", "population", "Population (millions)", 330, 0, 500));
+     sliders.push(new Slider("sliders", "initial", "Initially infected", 1000, 0, 1000000));
+
+     new Element("button", "sliders", { id: "reset", onclick: "javacript:reset()" })
+       .it.innerHTML = "Reset";
+     new Element("button", "sliders", { id: "cfg", onclick: "javascript:show(true)" })
+       .it.innerHTML = "Show";
+     generator = new Generator();
+
+     frame = document.getElementById("window");
+
+     show();
+  }
+
+
+  function show(gen, days) {
+     if(gen) generator = new Generator();
+
+     var from = Number(frame.value);
+     var cfg = generator.generate(config(), from + 180).graph("", from);
+
+    var ctx = document.getElementById('canvas').getContext('2d');
+    if (chart) chart.destroy;
+    if (gen === 'slide') cfg.options.animation = {duration: 0};
+    chart = new Chart(ctx, cfg);
+  }
+
+  function update(days) {
+     generator = new Generator();
+     chart.update(generator.generate(config(), days).graph())
+  }
+
+  function config() {
+     return  sliders.reduce(
+         function(o, s) { o[s.it.id] = Number(s.it.value); return o; },
+         {}
+      );
+  }
+
+  window.onload=reset;
+  </script>
+  <div style="width:75%;">
+    <canvas id="canvas"></canvas>
+    <input id="window" type="range" class="slider" min=0 max=180 value=0 style="width:100%" oninput="javascript:show('slide')"/>
+  </div>
+  <div width="100%">
+  <div id="sliders" style="float:left"></div>
+</body>
