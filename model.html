@@ -29,10 +29,10 @@
      sliders.push(new Slider("sliders", "population", "Population (millions)", 330, 0, 500));
      sliders.push(new Slider("sliders", "initial", "Initially infected", 1000, 0, 1000000));
 
-     new Element("button", "sliders", { id: "reset", onclick: "javacript:function() { reset(); show(true); }" })
-       .it.innerHTML = "Reset";
-     new Element("button", "sliders", { id: "cfg", onclick: "javascript:show(true)" })
-       .it.innerHTML = "Show";
+     $("<button id='cfg'>Show</button>")
+       .on('click', () => show(true))
+       .appendTo('#sliders');
+
      generator = new Generator();
 
      $('#window').slider({
@@ -78,7 +78,6 @@
     });
     setDefaults();
     show(true);
-    //$(window).on('hashchange', () => show('nosave'));
   });
 
 

@@ -12,7 +12,8 @@ function initChart(selector, data) {
 		  	border: "1px solid #fdd",
 		  	padding: "2px",
 		  	"background-color": "#fee",
-		  	opacity: 0.80
+		  	opacity: 0.80,
+        "z-index": 1000
 		  }).appendTo("body");
 
       $(selector).bind("plothover", function(event, pos, item) {
@@ -22,11 +23,18 @@ function initChart(selector, data) {
 
 		    if (item) {
 				  	var x = item.datapoint[0],
-				      	y = item.datapoint[1];
+				      	y = item.datapoint[1],
+                last = item.series.data[Math.max(x-1, 0)][1],
+                change = ((y - last)*100/last).toFixed(2);
 
-					  $("#tooltip").html("Day: " + x + " <br/> " + item.series.label + ": "+ formatValue(y))
-						  .css({top: item.pageY+5, left: item.pageX+5})
-						  .fadeIn(200);
+            if(change > 0) { change = "+" + change; }
+
+
+					  $("#tooltip").html(
+              "Day: " + x + " <br/> " + item.series.label + ": "+ formatValue(y) +
+              "<br>Change: " + change + "%"
+            ).css({top: item.pageY+5, left: item.pageX+5})
+						 .fadeIn(200);
 				  } else {
 			  		$("#tooltip").stop().hide();
 				  }
