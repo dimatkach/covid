@@ -1,11 +1,15 @@
 <html>
 <head>
 <link rel="stylesheet" type="text/css" href="styles.css" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.mousewheel@3.1.9/jquery.mousewheel.min.js"></script>
+<!-- script src="https://canvasjs.com/assets/script/jquery.canvasjs.min.js"></script -->
+<script src="https://cdn.jsdelivr.net/npm/flot@4.2.0/dist/es5/jquery.flot.min.js"></script>
 <script src="sliders.js"></script>
 <script src="model.js"></script>
+<script src="plot.js"></script>
 </head>
 <body>
   <script>
@@ -25,33 +29,93 @@
      sliders.push(new Slider("sliders", "population", "Population (millions)", 330, 0, 500));
      sliders.push(new Slider("sliders", "initial", "Initially infected", 1000, 0, 1000000));
 
-     new Element("button", "sliders", { id: "reset", onclick: "javacript:reset()" })
+     new Element("button", "sliders", { id: "reset", onclick: "javacript:function() { reset(); show(true); }" })
        .it.innerHTML = "Reset";
      new Element("button", "sliders", { id: "cfg", onclick: "javascript:show(true)" })
        .it.innerHTML = "Show";
      generator = new Generator();
 
-     frame = document.getElementById("window");
-
-     show();
+     $('#window').slider({
+       range: true,
+       min: 0,
+       max: 360,
+       values: [0, 180],
+       slide: function(event, ui) { show('nosave'); }
+     })
   }
+
+  function setDefaults() {
+     new URLSearchParams(location.search).forEach(function(value, key) {
+       console.log(key + '=' + value);
+       if(key == 'active') $('#' + value).click();
+       else if(key == 'range') $('#window').slider('option', 'values', value.split("-"));
+       else if(key == 'max') $('#window').slider('option', 'max', value);
+       else sliders.find((s) => s.it.id == key).setValue(value);
+     });
+     saveDefaults(true);
+  }
+
+  function saveDefaults(replace) {
+    vals = config();
+    vals.active = $('#kinds .link.selected').attr('id');
+    vals.range=$('#window').slider('option', 'values').join('-');
+    vals.max=$('#window').slider('option', 'max');
+
+    url = new URL(location.href);
+    url.search = "?" + $.param(vals);
+    if (replace) { history.replaceState({ path: url.href }, '', url.href); }
+    else if (url.href != location.href) { history.pushState({ path: url.href }, '', url.href); }
+  }
+
+  $(function() {
+    reset();
+    $('#kinds .link').click(function(event) {
+      if(!$(event.target).is(".selected")) {
+        $('#kinds .link.selected').removeClass('selected');
+        $(event.target).addClass("selected");
+        show(true);
+      }
+    });
+    setDefaults();
+    show(true);
+    //$(window).on('hashchange', () => show('nosave'));
+  });
 
 
   function show(gen, days) {
      if(gen) generator = new Generator();
 
-     var from = Number(frame.value);
-     var cfg = generator.generate(config(), from + 180).graph("", from);
+     var fromTo =$('#window').slider('values');
+     if(frame && $('#locked').is(':checked')) {
+        var diff = frame[1] - frame[0];
+        if (frame[0] == fromTo[0]) {
+           fromTo[0] = fromTo[1] - diff
+        } else { fromTo[1] = fromTo[0] + diff; }
+        $('#window').slider('option', 'values', fromTo);
+     }
 
-    var ctx = document.getElementById('canvas').getContext('2d');
-    if (chart) chart.destroy;
-    if (gen === 'slide') cfg.options.animation = {duration: 0};
-    chart = new Chart(ctx, cfg);
-  }
+     var kind = $('#kinds .link.selected');
+     var data = [];
+     generator.generate(config(), fromTo[1]).history.reduce (function(last, state, index) {
+       var next = state.data(config(), kind.attr('id'), last);
+       if (index >= fromTo[0]) data.push([index, next]);
+       return next;
+     }, 0)
 
-  function update(days) {
-     generator = new Generator();
-     chart.update(generator.generate(config(), days).graph())
+     chart = initChart("#canvas", [ { data: data, label:  kind.html() } ]);
+     chart.draw();
+
+     $('#canvas').dblclick(function() {
+       $('#window').slider('option', 'max', 360);
+       $('#window').slider('option', 'values', [0,180]);
+       show(true);
+     });
+
+
+     if ($('#window').slider('option', 'max') == fromTo[1]) $('#window').slider('option', 'max', fromTo[1]*2);
+     frame = $('#window').slider('values');
+
+     if(gen != 'nosave') saveDefaults();
   }
 
   function config() {
@@ -61,12 +125,22 @@
       );
   }
 
-  window.onload=reset;
   </script>
-  <div style="width:75%;">
-    <canvas id="canvas"></canvas>
-    <input id="window" type="range" class="slider" min=0 max=180 value=0 style="width:100%" oninput="javascript:show('slide')"/>
+  <div class="chart-holder">
+      <div id="kinds">
+        <div id="infected" class="link selected">Infected</div>
+        <div id="daily" class="link">Daily Infections</div>
+        <div id="deaths" class="link"> Daily Deaths</div>
+        <div id="dead" class="link">Total dead</div>
+        <div id="sick" class="link">Total Infections</div>
+        <div style="clear:both"></div>
+      </div>
+    <div id="canvas"></div>
+    <div id="window_control" style="float:left">
+      <label for="locked">Lock Range </label>
+      <input type="checkbox" id="locked" />
+      <div id="window"></div>
+    </div>
+    <div id="sliders" style="float:left"></div>
   </div>
-  <div width="100%">
-  <div id="sliders" style="float:left"></div>
 </body>

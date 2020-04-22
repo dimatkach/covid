@@ -13,19 +13,31 @@ class State {
       return this.infected * config.hospitalizations / 100;
    }
 
+   data(config, kind, last) {
+     if(kind == 'infected') return this.infected;
+     if(kind == 'daily') return this.new_infections(config);
+     if(kind == 'deaths') return this.new_deaths(config);
+     if(kind == 'dead') return this.dead;
+     if(kind == 'sick') return this.new_infections(config) + last;
+
+     throw (kind + " unknown");
+   }
+
+   new_deaths(config) {
+     var capacity = config.capacity * config.population/1000000;
+     var ni = this.new_infections(config);
+     var used_beds = Math.min(this.required_beds(config) * (1-1/config.duration), capacity);
+     var need_beds = ni * config.hospitalizations / 100;
+     var loosers = need_beds + used_beds - capacity;
+
+     return (this.infected/config.duration)*config.fatality/100 + Math.max(0, loosers);
+   }
+
    next(config) {
      var step = 1.0 / config.duration;
 
-     var ni = config.r0 * step * this.susceptible * this.infected / config.population;
-     var nb = ni * config.hospitalizations / 100;
-
-     var nd = ni * config.fatality / 100;
-
-     var used_beds = this.required_beds(config) * (1-step);
-     var need_beds = ni * config.hospitalizations / 100;
-     var loosers = need_beds + used_beds - config.capacity;
-
-     var new_dead = this.infected * step * config.fatality / 100 + Math.max(0, loosers);
+     var ni = this.new_infections(config);
+     var new_dead = this.new_deaths(config);
      var recovered = this.infected * step * (1 - config.fatality / 100);
 
      return new State(
@@ -52,73 +64,63 @@ class Generator {
    }
 
    infections() {
-      return this.history.map( function (state, index) { return { t: index, y: state.infected } });
+      return this.history.map( function (state, index) { return { x: index, y: state.infected } });
    }
 
    graph(label, from) {
      var cfg = graphConfig()
-     cfg.data.labels = this.history.map((v,k) => k).slice(from);
-     cfg.data.datasets.push(ds("Infections", colors.red, this.infections().slice(from)));
+     cfg.data.push(ds("Infections", colors.red, this.infections().slice(from)));
      return cfg;
    }
 }
 
 var colors = {
- red: "rgb(255, 99, 132)",
- orange: "rgb(255, 159, 64)",
- yellow: "rgb(255, 205, 86)",
- green: "rgb(75, 192, 192)",
- blue: "rgb(54, 162, 235)",
- purple: "rgb(153, 102, 255)",
- grey: "rgb(201, 203, 207)"
+ red: "#FF6347",
+ orange: "#FF9F40",
+ yellow: "#FFCD56",
+ green: "#4BC0C0",
+ blue: "#36A2EB",
+ purple: "#9966FF",
+ grey: "#C9CBCF"
 }
 
 function ds(label, color, data) {
   return {
-    label: label,
-    backgroundColor: color,
-    borderColor: color,
-    fill: false,
-    data: data
+    type: 'line',
+    showInLegend: true,
+    name: label,
+    color: color,
+    //markerType: "square",
+    //xValueFormatString: "DD MMM, YYYY",
+    //yValueFormatString: "#,##0K",
+    dataPoints: data
   }
 }
 
 
 function graphConfig() {
-  return {
-    type: 'line',
-    data: {
-     datasets: []
-    },
-    options: {
-      responsive: true,
-      title: {
-        display: true
-      },
-      tooltips: {
-        mode: 'index',
-        intersect: false,
-      },
-      hover: {
-        mode: 'nearest',
-        intersect: true
-      },
-      xAxes: [{
-        distribution: 'series',
-        offset: true,
-        ticks: {
-          major: {
-            enabled: true,
-            fontStyle: 'bold'
-          },
-          source: 'data',
-          autoSkip: true,
-          autoSkipPadding: 75,
-          maxRotation: 0,
-          sampleSize: 100
-        }
-    }]
-  }
- }
-
+	return {
+    animationEnabled: true,
+	  theme: "light2",
+		title:{ text: "Infected" },
+		axisX:{
+		// valueFormatString: "DD MMM"
+		},
+    axisY: {
+    title: "Infected",
+			 suffix: "M",
+			 //minimum: 30
+		},
+    toolTip:{
+      shared:true
+	  },
+    legend:{
+      cursor:"pointer",
+			verticalAlign: "bottom",
+			horizontalAlign: "left",
+			dockInsidePlotArea: true,
+			//itemclick: toogleDataSeries
+		},
+    data: []
+	};
 }

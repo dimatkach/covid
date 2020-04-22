@@ -51,3 +51,49 @@
   cursor: pointer; /* Cursor on hover */
 }
 
+chart-holder {
+  width: 75%;
+  margin-bottom: 50px;
+}
+
+#canvas {
+  height: 300px;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+#window_control {
+  float:left;
+  width:100%;
+}
+
+#window {
+  float: right;
+  height: 10px;
+  width: 90%;
+  margin-left: 30px;
+  margin-bottom: 50px;
+}
+
+#kinds {
+  width: 100%;
+  clear:both;
+  margin-left: 25%;
+}
+
+#kinds .link {
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+  float: left;
+  margin-left: 25px;
+}
+
+#kinds .link.selected {
+  cursor: default;
+  text-decoration: none;
+  color: black;
+  font-weight: bold;
+}
+
+

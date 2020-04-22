@@ -51,4 +51,9 @@ class Slider extends Element {
      var self = this;
      this.it.oninput = function() { self.value.innerHTML = this.value; }
    }
+
+   setValue(v) {
+      this.it.value=v;
+      this.value.innerHTML=v;
+   }
 }
