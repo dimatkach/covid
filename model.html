@@ -28,6 +28,7 @@
      sliders.push(new Slider("sliders", "capacity", "ICU beds (per million)", 250, 0, 1000000));
      sliders.push(new Slider("sliders", "population", "Population (millions)", 330, 0, 500));
      sliders.push(new Slider("sliders", "initial", "Initially infected", 1000, 0, 1000000));
+     sliders.push(new Slider("sliders", "id", "Initial dead", 0, 0, 1000000));
 
      $("<button id='cfg'>Show</button>")
        .on('click', () => show(true))

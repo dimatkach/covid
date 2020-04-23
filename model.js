@@ -14,11 +14,13 @@ class State {
    }
 
    data(config, kind, last) {
+     var ini = last == 0 ? config.initial / 1000000 : last;
+
      if(kind == 'infected') return this.infected;
      if(kind == 'daily') return this.new_infections(config);
      if(kind == 'deaths') return this.new_deaths(config);
      if(kind == 'dead') return this.dead;
-     if(kind == 'sick') return this.new_infections(config) + last;
+     if(kind == 'sick') return this.new_infections(config) + ini;
 
      throw (kind + " unknown");
    }
@@ -53,8 +55,9 @@ class Generator {
 
    generate(config, days) {
       if (!this.history) {
-        var ini = config.initial / 1000000 || 1
-        this.history = [new State(config.population - ini, ini, 0)];
+        var ini = config.initial / 1000000 || 1;
+        var id = config.id / 1000000;;
+        this.history = [new State(config.population - ini - id, ini, id)];
       }
       var start = this.history.length - 1;
       for (const day of Array(days || 180).keys()) {
